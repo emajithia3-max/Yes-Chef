@@ -44,7 +44,7 @@ struct AddRecipeMain: View {
                     
                     Button {
                         Task {
-                            await recipeVM.createRecipe(
+                            let recipeID = await recipeVM.createRecipe(
                                 userId: authVM.currentUser?.userId ?? "",
                                 name: recipeVM.name,
                                 ingredients: recipeVM.ingredients,
@@ -58,15 +58,18 @@ struct AddRecipeMain: View {
                                 media: recipeVM.mediaItems,
                                 chefsNotes: recipeVM.chefsNotes
                             )
-                            
-                            await recipeVM.addRecipeToRemixTreeAsRoot(
-                                description: recipeVM.description
-                            )
-                            
+
+                            // Add to remix tree - either as root OR as child, never both
                             if comeFromRemix {
                                 await recipeVM.addRecipeToRemixTreeAsNode(
+                                    recipeID: recipeID,
                                     description: recipeVM.description,
                                     parentID: remixParentID
+                                )
+                            } else {
+                                await recipeVM.addRecipeToRemixTreeAsRoot(
+                                    recipeID: recipeID,
+                                    description: recipeVM.description
                                 )
                             }
                         }
