@@ -484,7 +484,7 @@ struct RemixTreeView: View {
             NavigationLink(
                 destination: Group {
                     if let postID = navigateToPostID {
-                        DummyRemixPostView(postID: postID)
+                        PostView(recipe: Recipe.fetchById(postID))
                     }
                 },
                 isActive: $isNavigatingToPost

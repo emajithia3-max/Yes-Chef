@@ -221,7 +221,7 @@ struct PostView: View {
             .hidden()
 
             NavigationLink("", isActive: $goToRemixTree) {
-                DummyRemixTreeViewForPost(postID: recipe.recipeId)
+                RemixTreeView(nodeID: recipe.recipeId)
             }
             .hidden()
 
