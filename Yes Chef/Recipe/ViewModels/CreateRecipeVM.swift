@@ -184,14 +184,14 @@ import SwiftUI
 
         let nodeInfo: [String: Any] = [
             "childrenIDs": [],
-            "descriptionOfRecipeChanges": description,
-            "parentNodeID": "",
-            "rootNodeOfTreeID": recipeID,
+            "description": description,
+            "parentID": "",
+            "rootPostID": recipeID,
         ]
 
         do {
-            try await db.collection("realRemixTreeNodes").document(recipeID).setData(nodeInfo)
-            print("✅ Added recipe \(recipeID) as root node to realRemixTreeNodes")
+            try await db.collection("remixTreeNode").document(recipeID).setData(nodeInfo)
+            print("✅ Added recipe \(recipeID) as root node to remixTreeNode")
         } catch {
             print("❌ Error adding root node: \(error.localizedDescription)")
         }
@@ -241,11 +241,11 @@ import SwiftUI
         let db = Firestore.firestore()
 
         // Fetch parent node to get root ID
-        var rootNodeID = parentID
+        var rootPostID = parentID
         do {
-            let parent = try await db.collection("realRemixTreeNodes").document(parentID).getDocument()
-            if let parentInfo = parent.data(), let parentRoot = parentInfo["rootNodeOfTreeID"] as? String {
-                rootNodeID = parentRoot
+            let parent = try await db.collection("remixTreeNode").document(parentID).getDocument()
+            if let parentInfo = parent.data(), let parentRoot = parentInfo["rootPostID"] as? String {
+                rootPostID = parentRoot
             }
         } catch {
             print("⚠️ Could not fetch parent node: \(error.localizedDescription)")
@@ -253,17 +253,17 @@ import SwiftUI
 
         let nodeInfo: [String: Any] = [
             "childrenIDs": [],
-            "descriptionOfRecipeChanges": description,
-            "parentNodeID": parentID,
-            "rootNodeOfTreeID": rootNodeID,
+            "description": description,
+            "parentID": parentID,
+            "rootPostID": rootPostID,
         ]
 
         do {
-            try await db.collection("realRemixTreeNodes").document(recipeID).setData(nodeInfo)
-            print("✅ Added recipe \(recipeID) as child node to realRemixTreeNodes (parent: \(parentID))")
+            try await db.collection("remixTreeNode").document(recipeID).setData(nodeInfo)
+            print("✅ Added recipe \(recipeID) as child node to remixTreeNode (parent: \(parentID))")
 
             // Update parent's childrenIDs array
-            try await db.collection("realRemixTreeNodes").document(parentID).updateData([
+            try await db.collection("remixTreeNode").document(parentID).updateData([
                 "childrenIDs": FieldValue.arrayUnion([recipeID])
             ])
             print("✅ Updated parent node \(parentID) with new child \(recipeID)")
