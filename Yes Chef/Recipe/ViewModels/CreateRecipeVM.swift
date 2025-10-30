@@ -240,15 +240,28 @@ import SwiftUI
     func addRecipeToRemixTreeAsNode(recipeID: String, description: String, parentID: String) async {
         let db = Firestore.firestore()
 
-        // Fetch parent node to get root ID
+        print("🔍 Attempting to add recipe \(recipeID) as child of parent \(parentID)")
+
+        // Fetch parent node to get root ID and verify it exists
         var rootPostID = parentID
         do {
             let parent = try await db.collection("remixTreeNode").document(parentID).getDocument()
+
+            guard parent.exists else {
+                print("❌ ERROR: Parent recipe \(parentID) does NOT exist in remixTreeNode!")
+                print("❌ Cannot add child node. Parent must be added to remixTreeNode first.")
+                return
+            }
+
             if let parentInfo = parent.data(), let parentRoot = parentInfo["rootPostID"] as? String {
                 rootPostID = parentRoot
+                print("✅ Found parent node. Root is: \(rootPostID)")
+            } else {
+                print("⚠️ Parent exists but missing rootPostID field")
             }
         } catch {
-            print("⚠️ Could not fetch parent node: \(error.localizedDescription)")
+            print("❌ Error fetching parent node: \(error.localizedDescription)")
+            return
         }
 
         let nodeInfo: [String: Any] = [
