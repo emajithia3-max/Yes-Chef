@@ -257,9 +257,9 @@ class RemixData: ObservableObject {
             var nodes: [FirebaseRemixTreeNode] = []
             for doc in snapshot.documents {
                 let data = doc.data()
-                if let rootPostID = data["rootNodeID"] as? String,
+                if let rootPostID = data["rootPostID"] as? String,
                    let parentID = data["parentID"] as? String,
-                   let childrenIDs = data["childrenID"] as? [String],
+                   let childrenIDs = data["childrenIDs"] as? [String],
                    let description = data["description"] as? String {
 
                     let node = FirebaseRemixTreeNode(
