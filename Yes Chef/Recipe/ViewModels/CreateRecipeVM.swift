@@ -247,17 +247,22 @@ import SwiftUI
         do {
             let parent = try await db.collection("remixTreeNode").document(parentID).getDocument()
 
-            guard parent.exists else {
-                print("❌ ERROR: Parent recipe \(parentID) does NOT exist in remixTreeNode!")
-                print("❌ Cannot add child node. Parent must be added to remixTreeNode first.")
-                return
-            }
+            if !parent.exists {
+                print("⚠️ Parent recipe \(parentID) does NOT exist in remixTreeNode!")
+                print("🔧 Auto-fixing: Adding parent as root node first...")
 
-            if let parentInfo = parent.data(), let parentRoot = parentInfo["rootPostID"] as? String {
+                // Add the parent as a root node (backward compatibility fix)
+                await addRecipeToRemixTreeAsRoot(recipeID: parentID, description: "Original recipe (auto-added)")
+
+                // Now the parent exists as a root, so rootPostID is the parent itself
+                rootPostID = parentID
+                print("✅ Parent successfully added as root node")
+            } else if let parentInfo = parent.data(), let parentRoot = parentInfo["rootPostID"] as? String {
                 rootPostID = parentRoot
                 print("✅ Found parent node. Root is: \(rootPostID)")
             } else {
-                print("⚠️ Parent exists but missing rootPostID field")
+                print("⚠️ Parent exists but missing rootPostID field, using parentID as root")
+                rootPostID = parentID
             }
         } catch {
             print("❌ Error fetching parent node: \(error.localizedDescription)")
