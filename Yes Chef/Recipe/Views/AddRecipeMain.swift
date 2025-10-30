@@ -64,16 +64,17 @@ struct AddRecipeMain: View {
                             // Add to remix tree - either as root OR as child, never both
                             if comeFromRemix {
                                 print("🌳 Adding as CHILD node (remix) with parent: \(remixParentID)")
+                                let remixDescription = recipeVM.chefsNotes.isEmpty ? "Remixed version" : recipeVM.chefsNotes
                                 await recipeVM.addRecipeToRemixTreeAsNode(
                                     recipeID: recipeID,
-                                    description: recipeVM.description,
+                                    description: remixDescription,
                                     parentID: remixParentID
                                 )
                             } else {
                                 print("🌳 Adding as ROOT node (new recipe)")
                                 await recipeVM.addRecipeToRemixTreeAsRoot(
                                     recipeID: recipeID,
-                                    description: recipeVM.description
+                                    description: "Original recipe"
                                 )
                             }
                             print("✅ All operations complete!")
