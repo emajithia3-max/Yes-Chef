@@ -14,6 +14,7 @@ struct AddRecipeMain: View {
     @State private var weeklyPrompt: String = "Loading prompt..."
     @State private var showSuccessMessage: Bool = false
     @State private var showCancelMessage: Bool = false
+    @State private var createdRecipe: Recipe? = nil
 
     var comeFromRemix: Bool = false
     var remixParentID: String = ""
@@ -82,6 +83,22 @@ struct AddRecipeMain: View {
             }
             .overlay(successOverlay)
             .overlay(cancelOverlay)
+            .navigationDestination(item: $createdRecipe) { recipe in
+                PostView(recipe: recipe)
+                    .environment(authVM)
+                    .navigationBarBackButtonHidden(true)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                createdRecipe = nil
+                                dismiss()
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                Text("Back")
+                            }
+                        }
+                    }
+            }
         }
     }
 
@@ -89,9 +106,13 @@ struct AddRecipeMain: View {
     private var headerView: some View {
         HStack{
             Button {
-                showCancelMessage = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    dismiss()
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showCancelMessage = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        dismiss()
+                    }
                 }
             } label: {
                 Image(systemName: "xmark")
@@ -145,15 +166,22 @@ struct AddRecipeMain: View {
                         )
                     }
 
-                    // Show success message and dismiss
-                    await MainActor.run {
-                        self.showSuccessMessage = true
-                    }
+                    // Fetch the created recipe
+                    if let recipe = await Recipe.fetchById(recipeID) {
+                        // Show success message
+                        await MainActor.run {
+                            self.showSuccessMessage = true
+                        }
 
-                    // Wait for success message to show, then dismiss
-                    try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-                    await MainActor.run {
-                        dismiss()
+                        // Wait briefly for popup visibility
+                        try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+
+                        // Navigate to PostView with animation
+                        await MainActor.run {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                self.createdRecipe = recipe
+                            }
+                        }
                     }
                 }
             } label: {
