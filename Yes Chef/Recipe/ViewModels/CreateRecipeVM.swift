@@ -265,8 +265,8 @@ import SwiftUI
         ]
 
         do {
-            try await db.collection("remixTreeNode").document(recipeID).setData(nodeInfo)
-            print("✅ Added recipe \(recipeID) as root node to remixTreeNode")
+            try await db.collection("REMIXTREENODES").document(recipeID).setData(nodeInfo)
+            print("✅ Added recipe \(recipeID) as root node to REMIXTREENODES")
         } catch {
             print("❌ Error adding root node: \(error.localizedDescription)")
         }
@@ -338,10 +338,10 @@ import SwiftUI
         // Fetch parent node to get root ID and verify it exists
         var rootPostID = parentID
         do {
-            let parent = try await db.collection("remixTreeNode").document(parentID).getDocument()
+            let parent = try await db.collection("REMIXTREENODES").document(parentID).getDocument()
 
             if !parent.exists {
-                print("⚠️ Parent recipe \(parentID) does NOT exist in remixTreeNode!")
+                print("⚠️ Parent recipe \(parentID) does NOT exist in REMIXTREENODES!")
                 print("🔧 Auto-fixing: Adding parent as root node first...")
 
                 // Add the parent as a root node (backward compatibility fix)
@@ -370,11 +370,11 @@ import SwiftUI
         ]
 
         do {
-            try await db.collection("remixTreeNode").document(recipeID).setData(nodeInfo)
-            print("✅ Added recipe \(recipeID) as child node to remixTreeNode (parent: \(parentID))")
+            try await db.collection("REMIXTREENODES").document(recipeID).setData(nodeInfo)
+            print("✅ Added recipe \(recipeID) as child node to REMIXTREENODES (parent: \(parentID))")
 
             // Update parent's childrenIDs array
-            try await db.collection("remixTreeNode").document(parentID).updateData([
+            try await db.collection("REMIXTREENODES").document(parentID).updateData([
                 "childrenIDs": FieldValue.arrayUnion([recipeID])
             ])
             print("✅ Updated parent node \(parentID) with new child \(recipeID)")
@@ -435,10 +435,10 @@ import SwiftUI
             try await db.collection("RECIPES").document(recipeUUID).setData(data)
             print("Document added successfully!")
 
-            // If submitting to weekly challenge, copy to current_challenge_submissions
+            // If submitting to weekly challenge, copy to CURRENT_CHALLENGE_SUBMISSIONS
             if submitToWeeklyChallenge {
                 print("🏆 Submitting recipe to weekly challenge...")
-                try await db.collection("current_challenge_submissions").document(recipeUUID).setData([
+                try await db.collection("CURRENT_CHALLENGE_SUBMISSIONS").document(recipeUUID).setData([
                     "recipeId": recipeUUID,
                     "submittedAt": FieldValue.serverTimestamp()
                 ])

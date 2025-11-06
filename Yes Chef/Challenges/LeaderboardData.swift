@@ -43,8 +43,8 @@ class LeaderboardData: ObservableObject {
     
     func fetchUserRecipes() {
         listener?.remove()
-        
-        listener = db.collection("current_challenge_submissions")
+
+        listener = db.collection("CURRENT_CHALLENGE_SUBMISSIONS")
             .addSnapshotListener { snapshot, error in
                 guard let documents = snapshot?.documents, error == nil else {
                     print("Error listening to leaderboard updates:", error?.localizedDescription ?? "unknown error")

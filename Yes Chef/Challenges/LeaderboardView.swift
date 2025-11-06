@@ -176,34 +176,6 @@ struct LeaderboardView: View {
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 20)
-
-                        HStack(spacing: 20) {
-                            Button(action: {
-                                data.recalibrateEntries()
-                            }) {
-                                Text("Clear Leaderboard")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.red.opacity(0.8))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
-                            }
-
-                            Button(action: {
-                                data.recalibrateEntries()
-                            }) {
-                                Text("Load New Sample Entries")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.blue.opacity(0.8))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
-                            }
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
                     } // Close VStack inside ScrollView
                 } // Close ScrollView
             } // Close outer VStack

@@ -15,7 +15,7 @@ class HistoryViewModel: ObservableObject {
 
 
     func fetchHistory() {
-        db.collection("challengeHistory")
+        db.collection("CHALLENGEHISTORY")
             .order(by: "archivedAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {

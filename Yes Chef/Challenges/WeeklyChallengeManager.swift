@@ -40,7 +40,7 @@ import Observation
         let submissionIDs = await getCurrentChallengeSubmissionIDs()
         print("📊 Found \(submissionIDs.count) submissions to archive")
 
-        // Step 3: Archive to challengeHistory
+        // Step 3: Archive to CHALLENGEHISTORY
         let archived = await archiveChallengeHistory(prompt: currentPrompt, submissionIDs: submissionIDs)
         if !archived {
             await MainActor.run {
@@ -63,7 +63,7 @@ import Observation
 
         print("✨ Generated new prompt: \(newPrompt)")
 
-        // Step 5: Clear current_challenge_submissions
+        // Step 5: Clear CURRENT_CHALLENGE_SUBMISSIONS
         let cleared = await clearCurrentSubmissions()
         if !cleared {
             await MainActor.run {
@@ -111,7 +111,7 @@ import Observation
     /// Get all current challenge submission recipe IDs
     private func getCurrentChallengeSubmissionIDs() async -> [String] {
         do {
-            let snapshot = try await db.collection("current_challenge_submissions").getDocuments()
+            let snapshot = try await db.collection("CURRENT_CHALLENGE_SUBMISSIONS").getDocuments()
             return snapshot.documents.map { $0.documentID }
         } catch {
             print("Error fetching current submissions: \(error.localizedDescription)")
@@ -119,7 +119,7 @@ import Observation
         }
     }
 
-    /// Archive current challenge to challengeHistory
+    /// Archive current challenge to CHALLENGEHISTORY
     private func archiveChallengeHistory(prompt: String, submissionIDs: [String]) async -> Bool {
         do {
             let historyDoc: [String: Any] = [
@@ -130,7 +130,7 @@ import Observation
             ]
 
             // Create a new document with auto-generated ID
-            try await db.collection("challengeHistory").addDocument(data: historyDoc)
+            try await db.collection("CHALLENGEHISTORY").addDocument(data: historyDoc)
             return true
         } catch {
             print("Error archiving challenge history: \(error.localizedDescription)")
@@ -147,14 +147,14 @@ import Observation
         }
     }
 
-    /// Clear all documents from current_challenge_submissions
+    /// Clear all documents from CURRENT_CHALLENGE_SUBMISSIONS
     private func clearCurrentSubmissions() async -> Bool {
         do {
-            let snapshot = try await db.collection("current_challenge_submissions").getDocuments()
+            let snapshot = try await db.collection("CURRENT_CHALLENGE_SUBMISSIONS").getDocuments()
 
             // Delete all documents
             for document in snapshot.documents {
-                try await db.collection("current_challenge_submissions").document(document.documentID).delete()
+                try await db.collection("CURRENT_CHALLENGE_SUBMISSIONS").document(document.documentID).delete()
             }
 
             return true
