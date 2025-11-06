@@ -201,4 +201,3 @@ struct DMListView_Previews: PreviewProvider {
             .environment(AuthenticationVM())
     }
 }
-
