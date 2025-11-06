@@ -14,8 +14,6 @@ struct AddRecipeMain: View {
     @State private var weeklyPrompt: String = "Loading prompt..."
     @State private var showSuccessMessage: Bool = false
     @State private var showCancelMessage: Bool = false
-    @State private var createdRecipe: Recipe? = nil
-    @State private var navigateToPost: Bool = false
 
     var comeFromRemix: Bool = false
     var remixParentID: String = ""
@@ -84,7 +82,6 @@ struct AddRecipeMain: View {
             }
             .overlay(successOverlay)
             .overlay(cancelOverlay)
-            .background(navigationBackground)
         }
     }
 
@@ -148,18 +145,15 @@ struct AddRecipeMain: View {
                         )
                     }
 
-                    // Fetch the created recipe
-                    if let recipe = await Recipe.fetchById(recipeID) {
-                        await MainActor.run {
-                            self.createdRecipe = recipe
-                            self.showSuccessMessage = true
-                        }
+                    // Show success message and dismiss
+                    await MainActor.run {
+                        self.showSuccessMessage = true
+                    }
 
-                        // Wait for success message to show, then navigate
-                        try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-                        await MainActor.run {
-                            self.navigateToPost = true
-                        }
+                    // Wait for success message to show, then dismiss
+                    try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                    await MainActor.run {
+                        dismiss()
                     }
                 }
             } label: {
@@ -221,22 +215,6 @@ struct AddRecipeMain: View {
                 .animation(.spring(), value: showCancelMessage)
             }
         }
-    }
-
-    // MARK: - Navigation Background
-    private var navigationBackground: some View {
-        NavigationLink(
-            destination: Group {
-                if let recipe = createdRecipe {
-                    PostView(recipe: recipe)
-                        .environment(authVM)
-                }
-            },
-            isActive: $navigateToPost
-        ) {
-            EmptyView()
-        }
-        .hidden()
     }
 
     private var tabSelectionView: some View {
