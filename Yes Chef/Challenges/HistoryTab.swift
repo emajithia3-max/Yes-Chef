@@ -158,46 +158,47 @@ struct HistoryTab: View {
                 }
             }
             .frame(width: 328, height: 400)
-            }
-            .task {
-                await fetchWeeklyPrompt()
-                viewModel.fetchHistory()
-            }
-            .alert("Test Weekly Reset", isPresented: $showResetConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Reset", role: .destructive) {
-                    Task {
-                        await challengeManager.performWeeklyReset()
-                        // Refresh data
-                        await fetchWeeklyPrompt()
-                        viewModel.fetchHistory()
-                    }
-                }
-            } message: {
-                Text("This will archive current submissions, generate a new prompt, and clear the current challenge. Continue?")
-            }
-            .overlay(
-                Group {
-                    if challengeManager.isResetting {
-                        ZStack {
-                            Color.black.opacity(0.4)
-                                .ignoresSafeArea()
-                            VStack {
-                                ProgressView()
-                                    .scaleEffect(1.5)
-                                Text("Resetting weekly challenge...")
-                                    .padding()
-                                    .foregroundColor(.white)
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                        }
-                    }
-                }
-            )
+        } // Close NavigationView
+        } // Close main VStack
+        .task {
+            await fetchWeeklyPrompt()
+            viewModel.fetchHistory()
         }
-    }
+        .alert("Test Weekly Reset", isPresented: $showResetConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                Task {
+                    await challengeManager.performWeeklyReset()
+                    // Refresh data
+                    await fetchWeeklyPrompt()
+                    viewModel.fetchHistory()
+                }
+            }
+        } message: {
+            Text("This will archive current submissions, generate a new prompt, and clear the current challenge. Continue?")
+        }
+        .overlay(
+            Group {
+                if challengeManager.isResetting {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                        VStack {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                            Text("Resetting weekly challenge...")
+                                .padding()
+                                .foregroundColor(.white)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                    }
+                }
+            }
+        )
+        } // Close NavigationStack
+    } // Close body
 
     // Fetch the current weekly challenge prompt
     private func fetchWeeklyPrompt() async {
@@ -220,7 +221,7 @@ struct HistoryTab: View {
             }
         }
     }
-}
+} // Close struct
 
 #Preview {
     HistoryTab()

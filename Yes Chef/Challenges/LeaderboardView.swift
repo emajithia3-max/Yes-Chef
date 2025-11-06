@@ -199,9 +199,7 @@ struct LeaderboardView: View {
             data.fetchUserRecipes()
             await fetchWeeklyPrompt()
         }
-    }
-
-    }
+    } // Close body
 
     // Fetch the current weekly challenge prompt
     private func fetchWeeklyPrompt() async {
