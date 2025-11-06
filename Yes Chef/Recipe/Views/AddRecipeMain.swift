@@ -37,87 +37,7 @@ struct AddRecipeMain: View {
     var body: some View {
         NavigationStack{
             VStack(spacing: 0){
-                HStack{
-                    Button {
-                        showCancelMessage = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            dismiss()
-                        }
-                    } label: {
-                        Image(systemName: "xmark")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .foregroundStyle(.black)
-                    }
-                    Spacer()
-                    
-                    Text("Add Recipe")
-                        .font(.custom("Georgia", size: 30))
-                        .foregroundStyle(Color(hex: "#453736"))
-                        .fontWeight(.bold)
-                    
-                    Spacer()
-                    
-                    Button {
-                        Task {
-                            print("📝 Creating recipe...")
-                            let recipeID = await recipeVM.createRecipe(
-                                userId: authVM.currentUser?.userId ?? "",
-                                name: recipeVM.name,
-                                ingredients: recipeVM.ingredients,
-                                allergens: recipeVM.allergens,
-                                tags: recipeVM.tags,
-                                steps: recipeVM.steps,
-                                description: recipeVM.description,
-                                prepTime: recipeVM.prepTime,
-                                difficulty: recipeVM.difficulty,
-                                servingSize: recipeVM.servingSize,
-                                media: recipeVM.mediaItems,
-                                chefsNotes: recipeVM.chefsNotes,
-                                submitToWeeklyChallenge: submitToWeeklyChallenge
-                            )
-                            print("✅ Recipe created with ID: \(recipeID)")
-
-                            // Add to remix tree - either as root OR as child, never both
-                            if comeFromRemix {
-                                print("🌳 Adding as CHILD node (remix) with parent: \(remixParentID)")
-                                let remixDescription = recipeVM.chefsNotes.isEmpty ? "Remixed version" : recipeVM.chefsNotes
-                                await recipeVM.addRecipeToRemixTreeAsNode(
-                                    recipeID: recipeID,
-                                    description: remixDescription,
-                                    parentID: remixParentID
-                                )
-                            } else {
-                                print("🌳 Adding as ROOT node (new recipe)")
-                                await recipeVM.addRecipeToRemixTreeAsRoot(
-                                    recipeID: recipeID,
-                                    description: "Original recipe"
-                                )
-                            }
-
-                            // Fetch the created recipe
-                            if let recipe = await Recipe.fetchById(recipeID) {
-                                await MainActor.run {
-                                    self.createdRecipe = recipe
-                                    self.showSuccessMessage = true
-                                }
-
-                                // Wait for success message to show, then navigate
-                                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-                                await MainActor.run {
-                                    self.navigateToPost = true
-                                }
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "checkmark")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .foregroundStyle(.black)
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding()
+                headerView
                 
                 tabSelectionView
                 if selectedTab == 0 {
@@ -162,72 +82,163 @@ struct AddRecipeMain: View {
             .task {
                 await fetchWeeklyPrompt()
             }
-            .overlay(
-                // Success message overlay
-                Group {
-                    if showSuccessMessage {
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                    .font(.title2)
-                                Text("Recipe added!")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                            }
-                            .padding()
-                            .background(Color.black.opacity(0.8))
-                            .cornerRadius(12)
-                            .padding(.bottom, 50)
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .animation(.spring(), value: showSuccessMessage)
-                    }
-                }
-            )
-            .overlay(
-                // Cancel message overlay
-                Group {
-                    if showCancelMessage {
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.red)
-                                    .font(.title2)
-                                Text("Recipe add canceled")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                            }
-                            .padding()
-                            .background(Color.black.opacity(0.8))
-                            .cornerRadius(12)
-                            .padding(.bottom, 50)
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .animation(.spring(), value: showCancelMessage)
-                    }
-                }
-            )
-            .background(
-                // Navigation to PostView
-                NavigationLink(
-                    destination: Group {
-                        if let recipe = createdRecipe {
-                            PostView(recipe: recipe)
-                                .environment(authVM)
-                        }
-                    },
-                    isActive: $navigateToPost
-                ) {
-                    EmptyView()
-                }
-                .hidden()
-            )
+            .overlay(successOverlay)
+            .overlay(cancelOverlay)
+            .background(navigationBackground)
         }
     }
-    
+
+    // MARK: - Header View
+    private var headerView: some View {
+        HStack{
+            Button {
+                showCancelMessage = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    dismiss()
+                }
+            } label: {
+                Image(systemName: "xmark")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(.black)
+            }
+            Spacer()
+
+            Text("Add Recipe")
+                .font(.custom("Georgia", size: 30))
+                .foregroundStyle(Color(hex: "#453736"))
+                .fontWeight(.bold)
+
+            Spacer()
+
+            Button {
+                Task {
+                    print("📝 Creating recipe...")
+                    let recipeID = await recipeVM.createRecipe(
+                        userId: authVM.currentUser?.userId ?? "",
+                        name: recipeVM.name,
+                        ingredients: recipeVM.ingredients,
+                        allergens: recipeVM.allergens,
+                        tags: recipeVM.tags,
+                        steps: recipeVM.steps,
+                        description: recipeVM.description,
+                        prepTime: recipeVM.prepTime,
+                        difficulty: recipeVM.difficulty,
+                        servingSize: recipeVM.servingSize,
+                        media: recipeVM.mediaItems,
+                        chefsNotes: recipeVM.chefsNotes,
+                        submitToWeeklyChallenge: submitToWeeklyChallenge
+                    )
+                    print("✅ Recipe created with ID: \(recipeID)")
+
+                    // Add to remix tree - either as root OR as child, never both
+                    if comeFromRemix {
+                        print("🌳 Adding as CHILD node (remix) with parent: \(remixParentID)")
+                        let remixDescription = recipeVM.chefsNotes.isEmpty ? "Remixed version" : recipeVM.chefsNotes
+                        await recipeVM.addRecipeToRemixTreeAsNode(
+                            recipeID: recipeID,
+                            description: remixDescription,
+                            parentID: remixParentID
+                        )
+                    } else {
+                        print("🌳 Adding as ROOT node (new recipe)")
+                        await recipeVM.addRecipeToRemixTreeAsRoot(
+                            recipeID: recipeID,
+                            description: "Original recipe"
+                        )
+                    }
+
+                    // Fetch the created recipe
+                    if let recipe = await Recipe.fetchById(recipeID) {
+                        await MainActor.run {
+                            self.createdRecipe = recipe
+                            self.showSuccessMessage = true
+                        }
+
+                        // Wait for success message to show, then navigate
+                        try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                        await MainActor.run {
+                            self.navigateToPost = true
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "checkmark")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(.black)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding()
+    }
+
+    // MARK: - Success Overlay
+    private var successOverlay: some View {
+        Group {
+            if showSuccessMessage {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.title2)
+                        Text("Recipe added!")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(12)
+                    .padding(.bottom, 50)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(), value: showSuccessMessage)
+            }
+        }
+    }
+
+    // MARK: - Cancel Overlay
+    private var cancelOverlay: some View {
+        Group {
+            if showCancelMessage {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .font(.title2)
+                        Text("Recipe add canceled")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(12)
+                    .padding(.bottom, 50)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(), value: showCancelMessage)
+            }
+        }
+    }
+
+    // MARK: - Navigation Background
+    private var navigationBackground: some View {
+        NavigationLink(
+            destination: Group {
+                if let recipe = createdRecipe {
+                    PostView(recipe: recipe)
+                        .environment(authVM)
+                }
+            },
+            isActive: $navigateToPost
+        ) {
+            EmptyView()
+        }
+        .hidden()
+    }
+
     private var tabSelectionView: some View {
         ZStack(alignment: .bottomLeading){
             
