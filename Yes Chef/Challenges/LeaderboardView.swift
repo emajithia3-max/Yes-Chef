@@ -550,7 +550,7 @@ struct RecipeDetailView: View {
 }
 
 // MARK: - Custom Shapes
-struct RoundedCorner: Shape {
+fileprivate struct RoundedCorner: Shape {
     var radius: CGFloat
     var corners: UIRectCorner
 
