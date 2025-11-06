@@ -12,11 +12,15 @@ struct AddRecipeMain: View {
     @State private var recipeVM: CreateRecipeVM
     @State private var submitToWeeklyChallenge: Bool = false
     @State private var weeklyPrompt: String = "Loading prompt..."
+    @State private var showSuccessMessage: Bool = false
+    @State private var showCancelMessage: Bool = false
+    @State private var createdRecipe: Recipe? = nil
+    @State private var navigateToPost: Bool = false
 
     var comeFromRemix: Bool = false
     var remixParentID: String = ""
 
-    init(remixRecipe: Recipe? = nil) {
+    init(remixRecipe: Recipe? = nil, submitToWeeklyChallenge: Bool = false) {
         if let recipe = remixRecipe {
             _recipeVM = State(initialValue: CreateRecipeVM(fromRecipe: recipe))
             self.comeFromRemix = true
@@ -24,6 +28,7 @@ struct AddRecipeMain: View {
         } else {
             _recipeVM = State(initialValue: CreateRecipeVM())
         }
+        _submitToWeeklyChallenge = State(initialValue: submitToWeeklyChallenge)
     }
 
     @Environment(AuthenticationVM.self) var authVM
@@ -34,7 +39,10 @@ struct AddRecipeMain: View {
             VStack(spacing: 0){
                 HStack{
                     Button {
-                        dismiss()
+                        showCancelMessage = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            dismiss()
+                        }
                     } label: {
                         Image(systemName: "xmark")
                             .resizable()
@@ -87,9 +95,19 @@ struct AddRecipeMain: View {
                                 )
                             }
 
+                            // Fetch the created recipe
+                            if let recipe = await Recipe.fetchById(recipeID) {
+                                await MainActor.run {
+                                    self.createdRecipe = recipe
+                                    self.showSuccessMessage = true
+                                }
 
-                            dismiss()
-
+                                // Wait for success message to show, then navigate
+                                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                                await MainActor.run {
+                                    self.navigateToPost = true
+                                }
+                            }
                         }
                     } label: {
                         Image(systemName: "checkmark")
@@ -144,6 +162,69 @@ struct AddRecipeMain: View {
             .task {
                 await fetchWeeklyPrompt()
             }
+            .overlay(
+                // Success message overlay
+                Group {
+                    if showSuccessMessage {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.title2)
+                                Text("Recipe added!")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
+                            .background(Color.black.opacity(0.8))
+                            .cornerRadius(12)
+                            .padding(.bottom, 50)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.spring(), value: showSuccessMessage)
+                    }
+                }
+            )
+            .overlay(
+                // Cancel message overlay
+                Group {
+                    if showCancelMessage {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                                    .font(.title2)
+                                Text("Recipe add canceled")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
+                            .background(Color.black.opacity(0.8))
+                            .cornerRadius(12)
+                            .padding(.bottom, 50)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.spring(), value: showCancelMessage)
+                    }
+                }
+            )
+            .background(
+                // Navigation to PostView
+                NavigationLink(
+                    destination: Group {
+                        if let recipe = createdRecipe {
+                            PostView(recipe: recipe)
+                                .environment(authVM)
+                        }
+                    },
+                    isActive: $navigateToPost
+                ) {
+                    EmptyView()
+                }
+                .hidden()
+            )
         }
     }
     
