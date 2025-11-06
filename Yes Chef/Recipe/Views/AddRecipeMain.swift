@@ -15,6 +15,7 @@ struct AddRecipeMain: View {
     @State private var showSuccessMessage: Bool = false
     @State private var showCancelMessage: Bool = false
     @State private var createdRecipe: Recipe? = nil
+    @State private var showPostView: Bool = false
 
     var comeFromRemix: Bool = false
     var remixParentID: String = ""
@@ -83,21 +84,24 @@ struct AddRecipeMain: View {
             }
             .overlay(successOverlay)
             .overlay(cancelOverlay)
-            .navigationDestination(item: $createdRecipe) { recipe in
-                PostView(recipe: recipe)
-                    .environment(authVM)
-                    .navigationBarBackButtonHidden(true)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button {
-                                createdRecipe = nil
-                                dismiss()
-                            } label: {
-                                Image(systemName: "chevron.left")
-                                Text("Back")
+            .navigationDestination(isPresented: $showPostView) {
+                if let recipe = createdRecipe {
+                    PostView(recipe: recipe)
+                        .environment(authVM)
+                        .navigationBarBackButtonHidden(true)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button {
+                                    showPostView = false
+                                    createdRecipe = nil
+                                    dismiss()
+                                } label: {
+                                    Image(systemName: "chevron.left")
+                                    Text("Back")
+                                }
                             }
                         }
-                    }
+                }
             }
         }
     }
@@ -178,8 +182,9 @@ struct AddRecipeMain: View {
 
                         // Navigate to PostView with animation
                         await MainActor.run {
+                            self.createdRecipe = recipe
                             withAnimation(.easeInOut(duration: 0.3)) {
-                                self.createdRecipe = recipe
+                                self.showPostView = true
                             }
                         }
                     }
