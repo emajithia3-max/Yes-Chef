@@ -194,11 +194,12 @@ struct LeaderboardView: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 10)
-        }
+        } // Close VStack
         .task {
             data.fetchUserRecipes()
             await fetchWeeklyPrompt()
         }
+        } // Close NavigationStack
     } // Close body
 
     // Fetch the current weekly challenge prompt
