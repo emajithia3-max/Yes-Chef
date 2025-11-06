@@ -383,18 +383,18 @@ import SwiftUI
         }
     }
     
-    func createRecipe(userId: String, name: String, ingredients: [Ingredient], allergens: [String], tags: [String], steps: [String], description: String, prepTime: Int, difficulty: Difficulty, servingSize: Int, media: [MediaItem], chefsNotes: String) async -> String {
-        
+    func createRecipe(userId: String, name: String, ingredients: [Ingredient], allergens: [String], tags: [String], steps: [String], description: String, prepTime: Int, difficulty: Difficulty, servingSize: Int, media: [MediaItem], chefsNotes: String, submitToWeeklyChallenge: Bool = false) async -> String {
+
         let recipeID = UUID()
         let recipeUUID = recipeID.uuidString
-        
+
         let db = Firestore.firestore()
         var uploadedMediaURLs: [String] = []
-        
+
         for (index, mediaItem) in mediaItems.enumerated() {
             let ext = mediaItem.mediaType == .video ? "mov" : "jpg"
             let fileName = "media_\(index).\(ext)"
-            
+
             if let urlString = await uploadMediaToFirebase(
                 mediaItem: mediaItem,
                 fileName: fileName,
@@ -403,9 +403,9 @@ import SwiftUI
                 uploadedMediaURLs.append(urlString)
             }
         }
-        
+
         print("All uploaded media: \(uploadedMediaURLs)")
-        
+
         let ingredientsData = ingredients.map { ingredient in
             [
                 "name": ingredient.name,
@@ -414,7 +414,7 @@ import SwiftUI
                 "preparation": ingredient.preparation
             ] as [String: Any]
         }
-        
+
         let data: [String: Any] = [
             "userId": userId,
             "name": name,
@@ -430,14 +430,24 @@ import SwiftUI
             "chefsNotes": chefsNotes,
             "likes": 0
         ]
-        
+
         do {
             try await db.collection("RECIPES").document(recipeUUID).setData(data)
             print("Document added successfully!")
+
+            // If submitting to weekly challenge, copy to current_challenge_submissions
+            if submitToWeeklyChallenge {
+                print("🏆 Submitting recipe to weekly challenge...")
+                try await db.collection("current_challenge_submissions").document(recipeUUID).setData([
+                    "recipeId": recipeUUID,
+                    "submittedAt": FieldValue.serverTimestamp()
+                ])
+                print("✅ Recipe submitted to weekly challenge!")
+            }
         } catch {
             print("Error adding document: \(error.localizedDescription)")
         }
-        
+
         return recipeUUID
     }
 }

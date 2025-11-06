@@ -5,14 +5,17 @@
 //  Created by Asutosh Mishra on 10/2/25.
 //
 import SwiftUI
+import FirebaseFirestore
 
 struct AddRecipeMain: View {
     @State private var selectedTab: Int = 0
     @State private var recipeVM: CreateRecipeVM
-    
+    @State private var submitToWeeklyChallenge: Bool = false
+    @State private var weeklyPrompt: String = "Loading prompt..."
+
     var comeFromRemix: Bool = false
     var remixParentID: String = ""
-    
+
     init(remixRecipe: Recipe? = nil) {
         if let recipe = remixRecipe {
             _recipeVM = State(initialValue: CreateRecipeVM(fromRecipe: recipe))
@@ -62,7 +65,8 @@ struct AddRecipeMain: View {
                                 difficulty: recipeVM.difficulty,
                                 servingSize: recipeVM.servingSize,
                                 media: recipeVM.mediaItems,
-                                chefsNotes: recipeVM.chefsNotes
+                                chefsNotes: recipeVM.chefsNotes,
+                                submitToWeeklyChallenge: submitToWeeklyChallenge
                             )
                             print("✅ Recipe created with ID: \(recipeID)")
 
@@ -83,7 +87,7 @@ struct AddRecipeMain: View {
                                 )
                             }
 
-                            
+
                             dismiss()
 
                         }
@@ -103,9 +107,41 @@ struct AddRecipeMain: View {
                 } else {
                     AIChefBaseView(recipeVM: recipeVM)
                 }
+
+                // Weekly Challenge Toggle Section
+                VStack(spacing: 12) {
+                    Toggle(isOn: $submitToWeeklyChallenge) {
+                        Text("Submit to Weekly Challenge?")
+                            .font(.headline)
+                            .foregroundStyle(Color(hex: "#453736"))
+                    }
+                    .padding(.horizontal)
+                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#404741")))
+
+                    if submitToWeeklyChallenge {
+                        VStack(spacing: 4) {
+                            Text("This Week's Challenge")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            Text(weeklyPrompt)
+                                .font(.body)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                    }
+                }
+                .padding(.vertical, 10)
             }
             .background(Color(hex: "#fffffc"))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .task {
+                await fetchWeeklyPrompt()
+            }
         }
     }
     
@@ -179,6 +215,28 @@ struct AddRecipeMain: View {
             .padding(.top, 8)
             .padding(.bottom, 10)
             .padding(.horizontal, 0)
+        }
+    }
+
+    // Fetch the current weekly challenge prompt
+    private func fetchWeeklyPrompt() async {
+        let db = Firestore.firestore()
+        do {
+            let document = try await db.collection("weeklyChallenge").document("current").getDocument()
+            if let data = document.data(), let prompt = data["prompt"] as? String {
+                await MainActor.run {
+                    self.weeklyPrompt = prompt
+                }
+            } else {
+                await MainActor.run {
+                    self.weeklyPrompt = "No challenge available this week"
+                }
+            }
+        } catch {
+            print("Error fetching weekly prompt: \(error.localizedDescription)")
+            await MainActor.run {
+                self.weeklyPrompt = "Could not load challenge prompt"
+            }
         }
     }
 }

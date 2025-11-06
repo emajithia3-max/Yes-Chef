@@ -5,40 +5,43 @@ import Firebase
 struct LeaderboardView: View {
     @StateObject private var data: LeaderboardData = LeaderboardData()
     @State private var reloadTrigger: Bool = false
-    
+    @State private var weeklyPrompt: String = "Loading prompt..."
+    @State private var showHistory: Bool = false
+
 
     var body: some View {
-        VStack(spacing: 20) {
-            
-            HStack {
-                Spacer()
-                Button(action: {
+        NavigationStack {
+            VStack(spacing: 20) {
 
-                }) {
-                    Image(systemName: "clock.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
+                HStack {
+                    Spacer()
+                    NavigationLink(destination: HistoryTab()) {
+                        Image(systemName: "clock.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+
                 }
-                
-            }
-            .padding(.horizontal)
-            
-            Text("Leaderboard")
-                .font(.largeTitle)
-                .bold()
-            
-            VStack(spacing: 4) {
-                Text("This Week")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                Text("Prompt for weekly challenge")
-                    .font(.subheadline)
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.gray.opacity(0.3))
-            .cornerRadius(10)
-            .padding(.horizontal)
+                .padding(.horizontal)
+
+                Text("Leaderboard")
+                    .font(.largeTitle)
+                    .bold()
+
+                VStack(spacing: 4) {
+                    Text("This Week")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    Text(weeklyPrompt)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.gray.opacity(0.3))
+                .cornerRadius(10)
+                .padding(.horizontal)
             
             HStack {
                 Spacer()
@@ -132,13 +135,36 @@ struct LeaderboardView: View {
                 Spacer()
             }
             .padding(.top)
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(data.currentLeaderboard.entries.dropFirst(3)) { entry in
+
+            // Top 5 Leaderboard (excluding top 3 shown in podium)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(data.currentLeaderboard.entries.dropFirst(3).prefix(2)) { entry in
                         LeaderboardRow(entry: entry)
                     }
                 }
-                .padding(.vertical)
+                .padding(.horizontal)
+            }
+            .frame(height: 100)
+
+            Text("All Submissions")
+                .font(.title2)
+                .bold()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+            // Grid view of all submissions
+            ScrollView {
+                let columns = [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ]
+                LazyVGrid(columns: columns, spacing: 15) {
+                    ForEach(data.currentLeaderboard.entries) { entry in
+                        ChallengeRecipeCard(entry: entry)
+                    }
+                }
+                .padding(.horizontal)
             }
             
             HStack(spacing: 20) {
@@ -169,11 +195,35 @@ struct LeaderboardView: View {
             .padding(.horizontal)
             .padding(.bottom, 10)
         }
-        .onAppear {
+        .task {
             data.fetchUserRecipes()
+            await fetchWeeklyPrompt()
         }
     }
-        
+
+    }
+
+    // Fetch the current weekly challenge prompt
+    private func fetchWeeklyPrompt() async {
+        let db = Firestore.firestore()
+        do {
+            let document = try await db.collection("weeklyChallenge").document("current").getDocument()
+            if let data = document.data(), let prompt = data["prompt"] as? String {
+                await MainActor.run {
+                    self.weeklyPrompt = prompt
+                }
+            } else {
+                await MainActor.run {
+                    self.weeklyPrompt = "No challenge available this week"
+                }
+            }
+        } catch {
+            print("Error fetching weekly prompt: \(error.localizedDescription)")
+            await MainActor.run {
+                self.weeklyPrompt = "Could not load challenge prompt"
+            }
+        }
+    }
 }
 
 struct LeaderboardRow: View {
@@ -225,6 +275,66 @@ struct LeaderboardRow: View {
                 .shadow(radius: 2)
         )
         .padding(.horizontal)
+    }
+}
+
+struct ChallengeRecipeCard: View {
+    let entry: LeaderboardData.LeaderboardEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Recipe image placeholder or first media
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemGray5))
+                .frame(height: 120)
+                .overlay(
+                    VStack {
+                        Image(systemName: "fork.knife")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                    }
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.recipeName)
+                    .font(.headline)
+                    .lineLimit(2)
+
+                HStack {
+                    AsyncImage(url: URL(string: entry.user.profileImageURL ?? "")) { phase in
+                        if let image = phase.image {
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    Text(entry.user.username)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                HStack {
+                    Image(systemName: "heart.fill")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                    Text("\(entry.likes)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+        }
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 }
 
