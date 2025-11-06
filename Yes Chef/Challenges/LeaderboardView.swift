@@ -207,19 +207,47 @@ struct LeaderboardView: View {
         let db = Firestore.firestore()
         do {
             let document = try await db.collection("weeklyChallenge").document("current").getDocument()
+            if document.exists, let data = document.data(), let prompt = data["prompt"] as? String {
+                await MainActor.run {
+                    self.weeklyPrompt = prompt
+                }
+            } else {
+                // Document doesn't exist, initialize it
+                print("⚠️ Weekly challenge not initialized. Initializing now...")
+                await initializeWeeklyChallenge()
+            }
+        } catch {
+            print("Error fetching weekly prompt: \(error.localizedDescription)")
+            await MainActor.run {
+                self.weeklyPrompt = "Could not load challenge prompt"
+            }
+        }
+    }
+
+    // Initialize weekly challenge if it doesn't exist
+    private func initializeWeeklyChallenge() async {
+        await MainActor.run {
+            self.weeklyPrompt = "Initializing challenge..."
+        }
+
+        await WeeklyChallengeManager.initializeWeeklyChallenge()
+
+        // Try fetching again after initialization
+        let db = Firestore.firestore()
+        do {
+            let document = try await db.collection("weeklyChallenge").document("current").getDocument()
             if let data = document.data(), let prompt = data["prompt"] as? String {
                 await MainActor.run {
                     self.weeklyPrompt = prompt
                 }
             } else {
                 await MainActor.run {
-                    self.weeklyPrompt = "No challenge available this week"
+                    self.weeklyPrompt = "Create your best dish this week!"
                 }
             }
         } catch {
-            print("Error fetching weekly prompt: \(error.localizedDescription)")
             await MainActor.run {
-                self.weeklyPrompt = "Could not load challenge prompt"
+                self.weeklyPrompt = "Create your best dish this week!"
             }
         }
     }

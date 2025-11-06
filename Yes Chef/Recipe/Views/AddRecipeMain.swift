@@ -223,13 +223,14 @@ struct AddRecipeMain: View {
         let db = Firestore.firestore()
         do {
             let document = try await db.collection("weeklyChallenge").document("current").getDocument()
-            if let data = document.data(), let prompt = data["prompt"] as? String {
+            if document.exists, let data = document.data(), let prompt = data["prompt"] as? String {
                 await MainActor.run {
                     self.weeklyPrompt = prompt
                 }
             } else {
+                // Document doesn't exist, show default message
                 await MainActor.run {
-                    self.weeklyPrompt = "No challenge available this week"
+                    self.weeklyPrompt = "No weekly challenge active"
                 }
             }
         } catch {
