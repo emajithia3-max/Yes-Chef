@@ -32,13 +32,15 @@ struct LeaderboardView: View {
                             .font(.largeTitle)
                             .bold()
 
-                        VStack(spacing: 4) {
+                        VStack(spacing: 8) {
                             Text("This Week")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                             Text(weeklyPrompt)
-                                .font(.subheadline)
+                                .font(.body)
                                 .multilineTextAlignment(.center)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
                                 .padding(.horizontal)
                         }
                         .padding()

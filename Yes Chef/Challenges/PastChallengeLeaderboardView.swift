@@ -193,29 +193,53 @@ class PastChallengeData: ObservableObject {
                     .whereField(FieldPath.documentID(), in: batch)
                     .getDocuments()
 
-                for doc in snapshot.documents {
-                    let data = doc.data()
-                    let idString = doc.documentID
+                // Fetch user data for all recipes in this batch
+                await withTaskGroup(of: LeaderboardData.LeaderboardEntry?.self) { group in
+                    for doc in snapshot.documents {
+                        let data = doc.data()
+                        let idString = doc.documentID
 
-                    if let username = data["userId"] as? String,
-                       let recipeName = data["name"] as? String,
-                       let likes = data["likes"] as? Int {
+                        group.addTask {
+                            guard let userId = data["userId"] as? String,
+                                  let recipeName = data["name"] as? String,
+                                  let likes = data["likes"] as? Int else {
+                                return nil
+                            }
 
-                        let user = LeaderboardData.UserTest(
-                            id: data["userId"] as? String ?? "",
-                            username: username,
-                            profileImageURL: data["profileImageURL"] as? String
-                        )
+                            // Fetch username from users collection
+                            var username = userId // Fallback to userId
+                            var profileImageURL: String? = nil
 
-                        let entry = LeaderboardData.LeaderboardEntry(
-                            id: idString,
-                            rank: 0,
-                            user: user,
-                            recipeName: recipeName,
-                            likes: likes
-                        )
+                            do {
+                                let userDoc = try await self.db.collection("users").document(userId).getDocument()
+                                if let userData = userDoc.data() {
+                                    username = userData["username"] as? String ?? userId
+                                    profileImageURL = userData["profileImageURL"] as? String
+                                }
+                            } catch {
+                                print("⚠️ Error fetching user \(userId): \(error.localizedDescription)")
+                            }
 
-                        allEntries.append(entry)
+                            let user = LeaderboardData.UserTest(
+                                id: userId,
+                                username: username,
+                                profileImageURL: profileImageURL
+                            )
+
+                            return LeaderboardData.LeaderboardEntry(
+                                id: idString,
+                                rank: 0,
+                                user: user,
+                                recipeName: recipeName,
+                                likes: likes
+                            )
+                        }
+                    }
+
+                    for await entry in group {
+                        if let entry = entry {
+                            allEntries.append(entry)
+                        }
                     }
                 }
             } catch {

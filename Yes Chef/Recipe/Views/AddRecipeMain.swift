@@ -119,13 +119,15 @@ struct AddRecipeMain: View {
                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#404741")))
 
                     if submitToWeeklyChallenge {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 8) {
                             Text("This Week's Challenge")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                             Text(weeklyPrompt)
                                 .font(.body)
                                 .multilineTextAlignment(.center)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
                                 .padding(.horizontal)
                         }
                         .padding()

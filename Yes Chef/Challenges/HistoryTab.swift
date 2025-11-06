@@ -64,13 +64,19 @@ struct HistoryTab: View {
                 .padding(.horizontal)
             
             
-            VStack(spacing: 20) {
+            VStack(spacing: 8) {
                 Text("This week:")
                     .foregroundStyle(Color(.systemGray))
-                //need to update: space holder
+                    .font(.subheadline)
                 Text(thisWeekPrompt)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal)
             }
-                .frame(maxWidth: 328, maxHeight: 99)
+                .frame(maxWidth: 328)
+                .padding()
                 .background(Color(.systemGray4))
                 .cornerRadius(10)
 
