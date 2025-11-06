@@ -406,9 +406,8 @@ struct ProfileView: View {
         }
     }
 
-//
-/*
-struct RoundedCorner: Shape {
+// MARK: - Custom Shapes
+fileprivate struct RoundedCorner: Shape {
     var radius: CGFloat
     var corners: UIRectCorner
 
@@ -421,7 +420,7 @@ struct RoundedCorner: Shape {
         return Path(path.cgPath)
     }
 }
-*/
+
 // MARK: - Preview
 
 struct ProfileView_Previews: PreviewProvider {
