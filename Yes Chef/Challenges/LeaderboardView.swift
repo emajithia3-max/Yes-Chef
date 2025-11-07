@@ -441,7 +441,6 @@ struct LeaderboardRow: View {
                 .fill(Color(.systemGray6))
                 .shadow(radius: 2)
         )
-        .padding(.horizontal)
     }
 }
 

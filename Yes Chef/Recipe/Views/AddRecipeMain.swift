@@ -8,21 +8,15 @@ import SwiftUI
 import FirebaseFirestore
 
 struct AddRecipeMain: View {
-    @State private var selectedInternalTab: Int = 0
+    @State private var selectedTab: Int = 0
     @State private var recipeVM: CreateRecipeVM
     @State private var submitToWeeklyChallenge: Bool = false
     @State private var weeklyPrompt: String = "Loading prompt..."
-    @State private var showSuccessMessage: Bool = false
-    @State private var showCancelMessage: Bool = false
-    @State private var createdRecipe: Recipe? = nil
-    @State private var showPostView: Bool = false
-    @Binding var selectedTab: TabSelection
 
     var comeFromRemix: Bool = false
     var remixParentID: String = ""
 
-    init(selectedTab: Binding<TabSelection> = .constant(.post), remixRecipe: Recipe? = nil, submitToWeeklyChallenge: Bool = false) {
-        _selectedTab = selectedTab
+    init(remixRecipe: Recipe? = nil, submitToWeeklyChallenge: Bool = false) {
         if let recipe = remixRecipe {
             _recipeVM = State(initialValue: CreateRecipeVM(fromRecipe: recipe))
             self.comeFromRemix = true
@@ -42,7 +36,7 @@ struct AddRecipeMain: View {
                 headerView
                 
                 tabSelectionView
-                if selectedInternalTab == 0 {
+                if selectedTab == 0 {
                     CreateRecipe(recipeVM: recipeVM)
                 } else {
                     AIChefBaseView(recipeVM: recipeVM)
@@ -84,27 +78,6 @@ struct AddRecipeMain: View {
             .task {
                 await fetchWeeklyPrompt()
             }
-            .overlay(successOverlay)
-            .overlay(cancelOverlay)
-            .navigationDestination(isPresented: $showPostView) {
-                if let recipe = createdRecipe {
-                    PostView(recipe: recipe)
-                        .environment(authVM)
-                        .navigationBarBackButtonHidden(true)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarLeading) {
-                                Button {
-                                    showPostView = false
-                                    createdRecipe = nil
-                                    dismiss()
-                                } label: {
-                                    Image(systemName: "chevron.left")
-                                    Text("Back")
-                                }
-                            }
-                        }
-                }
-            }
         }
     }
 
@@ -112,21 +85,7 @@ struct AddRecipeMain: View {
     private var headerView: some View {
         HStack{
             Button {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showCancelMessage = true
-                }
-                // Auto-dismiss popup after 1 second
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        showCancelMessage = false
-                    }
-                }
-                // Navigate back to home tab
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        selectedTab = .home
-                    }
-                }
+                dismiss()
             } label: {
                 Image(systemName: "xmark")
                     .resizable()
@@ -179,31 +138,7 @@ struct AddRecipeMain: View {
                         )
                     }
 
-                    // Fetch the created recipe
-                    if let recipe = await Recipe.fetchById(recipeID) {
-                        // Show success message
-                        await MainActor.run {
-                            self.showSuccessMessage = true
-                        }
-
-                        // Wait briefly for popup visibility
-                        try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
-
-                        // Auto-dismiss success popup
-                        await MainActor.run {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                self.showSuccessMessage = false
-                            }
-                        }
-
-                        // Navigate to PostView with animation
-                        await MainActor.run {
-                            self.createdRecipe = recipe
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                self.showPostView = true
-                            }
-                        }
-                    }
+                    dismiss()
                 }
             } label: {
                 Image(systemName: "checkmark")
@@ -216,56 +151,6 @@ struct AddRecipeMain: View {
         .padding()
     }
 
-    // MARK: - Success Overlay
-    private var successOverlay: some View {
-        Group {
-            if showSuccessMessage {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.title2)
-                        Text("Recipe added!")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(Color.black.opacity(0.8))
-                    .cornerRadius(12)
-                    .padding(.bottom, 50)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .animation(.spring(), value: showSuccessMessage)
-            }
-        }
-    }
-
-    // MARK: - Cancel Overlay
-    private var cancelOverlay: some View {
-        Group {
-            if showCancelMessage {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.red)
-                            .font(.title2)
-                        Text("Recipe add canceled")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(Color.black.opacity(0.8))
-                    .cornerRadius(12)
-                    .padding(.bottom, 50)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .animation(.spring(), value: showCancelMessage)
-            }
-        }
-    }
-
     private var tabSelectionView: some View {
         ZStack(alignment: .bottomLeading){
             
@@ -275,60 +160,60 @@ struct AddRecipeMain: View {
             
             HStack(spacing: 0) {
 
-                Button(action: { selectedInternalTab = 0 }) {
+                Button(action: { selectedTab = 0 }) {
                     VStack(spacing: 8) {
                         Text("Edit Details")
                             .font(.body)
-                            .foregroundColor(selectedInternalTab == 0 ? Color(hex: "#404741") : Color(hex: "#7C887DF2"))
+                            .foregroundColor(selectedTab == 0 ? Color(hex: "#404741") : Color(hex: "#7C887DF2"))
                     }
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                 }
                 .padding(.bottom, 10)
                 .frame(maxWidth: .infinity)
-                .zIndex(selectedInternalTab == 0 ? 1 : 0)
+                .zIndex(selectedTab == 0 ? 1 : 0)
                 .background(
-                    RoundedCorner(radius: 25, corners: selectedInternalTab == 0 ? [.topLeft, .topRight] : [.bottomRight,.topRight,.topLeft])
-                        .fill(selectedInternalTab == 0 ? Color(hex: "#fffffc") : Color(hex: "#F9F5F2"))
+                    RoundedCorner(radius: 25, corners: selectedTab == 0 ? [.topLeft, .topRight] : [.bottomRight,.topRight,.topLeft])
+                        .fill(selectedTab == 0 ? Color(hex: "#fffffc") : Color(hex: "#F9F5F2"))
                         .frame(width: (UIScreen.main.bounds.width)/2, height: 50)
                         .background(
-                            RoundedCorner(radius: 25, corners: selectedInternalTab == 0 ? [.topLeft, .topRight] : [.bottomRight,.topRight,.topLeft])
+                            RoundedCorner(radius: 25, corners: selectedTab == 0 ? [.topLeft, .topRight] : [.bottomRight,.topRight,.topLeft])
                                 .fill(Color(.systemGray4))
                                 .frame(width: (UIScreen.main.bounds.width)/2 + 1, height: 50)
-                                .padding(selectedInternalTab == 0 ? .bottom : .top, 3)
+                                .padding(selectedTab == 0 ? .bottom : .top, 3)
                                 .overlay(
                                     Rectangle()
                                         .fill(Color(hex: "#fffffc"))
-                                        .padding(selectedInternalTab == 0 ? .top : .bottom, 35)
+                                        .padding(selectedTab == 0 ? .top : .bottom, 35)
                                 )
                         )
                 )
 
-                Button(action: { selectedInternalTab = 1 }) {
+                Button(action: { selectedTab = 1 }) {
                     VStack(spacing: 8) {
                         Text("AI Chef")
                             .font(.body)
-                            .foregroundColor(selectedInternalTab == 1 ? Color(hex: "#404741") : Color(hex: "#7C887DF2"))
+                            .foregroundColor(selectedTab == 1 ? Color(hex: "#404741") : Color(hex: "#7C887DF2"))
                     }
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                 }
                 .frame(maxWidth: .infinity)
-                .zIndex(selectedInternalTab == 1 ? 2 : 0)
+                .zIndex(selectedTab == 1 ? 2 : 0)
                 .background(
-                    RoundedCorner(radius: 25, corners: selectedInternalTab == 1 ? [.topLeft, .topRight] : [.bottomRight,.bottomLeft,.topRight,.topLeft])
-                        .fill(selectedInternalTab == 1 ? Color(hex: "#fffffc") : Color(hex: "#F9F5F2"))
+                    RoundedCorner(radius: 25, corners: selectedTab == 1 ? [.topLeft, .topRight] : [.bottomRight,.bottomLeft,.topRight,.topLeft])
+                        .fill(selectedTab == 1 ? Color(hex: "#fffffc") : Color(hex: "#F9F5F2"))
                         .frame(width: (UIScreen.main.bounds.width)/2, height: 50)
                         .background(
                             //Border over top of tab
-                            RoundedCorner(radius: 25, corners: selectedInternalTab == 1 ? [.topLeft, .topRight] : [.bottomRight,.bottomLeft, .topRight,.topLeft])
+                            RoundedCorner(radius: 25, corners: selectedTab == 1 ? [.topLeft, .topRight] : [.bottomRight,.bottomLeft, .topRight,.topLeft])
                                 .fill(Color(.systemGray4))
                                 .frame(width: (UIScreen.main.bounds.width)/2 + 1, height: 50)
-                                .padding(selectedInternalTab == 1 ? .bottom : .top, 3)
+                                .padding(selectedTab == 1 ? .bottom : .top, 3)
                                 .overlay(
                                     Rectangle()
                                         .fill(Color(hex: "#fffffc"))
-                                        .padding(selectedInternalTab == 1 ? .top : .bottom, 35)
+                                        .padding(selectedTab == 1 ? .top : .bottom, 35)
                                 )
                         )
                 )
