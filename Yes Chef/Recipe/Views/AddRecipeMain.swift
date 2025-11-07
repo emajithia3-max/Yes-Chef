@@ -14,6 +14,7 @@ struct AddRecipeMain: View {
     @State private var weeklyPrompt: String = "Loading prompt..."
     @State private var showSuccessMessage: Bool = false
     @State private var showCancelMessage: Bool = false
+    @State private var isProcessing: Bool = false
     @Binding var selectedTab: TabSelection
     @Binding var navigationRecipe: Recipe?
 
@@ -93,6 +94,9 @@ struct AddRecipeMain: View {
     private var headerView: some View {
         HStack{
             Button {
+                guard !isProcessing else { return }
+                isProcessing = true
+
                 withAnimation(.easeInOut(duration: 0.3)) {
                     showCancelMessage = true
                 }
@@ -108,12 +112,17 @@ struct AddRecipeMain: View {
                         selectedTab = .home
                     }
                 }
+                // Re-enable buttons after navigation completes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    isProcessing = false
+                }
             } label: {
                 Image(systemName: "xmark")
                     .resizable()
                     .frame(width: 20, height: 20)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(isProcessing ? Color.gray : Color.black)
             }
+            .disabled(isProcessing)
             Spacer()
 
             Text("Add Recipe")
@@ -124,6 +133,9 @@ struct AddRecipeMain: View {
             Spacer()
 
             Button {
+                guard !isProcessing else { return }
+                isProcessing = true
+
                 Task {
                     print("📝 Creating recipe...")
                     let recipeID = await recipeVM.createRecipe(
@@ -182,6 +194,7 @@ struct AddRecipeMain: View {
                             self.recipeVM.reset()
                             self.selectedInternalTab = 0
                             self.submitToWeeklyChallenge = false
+                            self.isProcessing = false
                         }
 
                         // Navigate to PostView via home tab navigation
@@ -197,8 +210,9 @@ struct AddRecipeMain: View {
                 Image(systemName: "checkmark")
                     .resizable()
                     .frame(width: 20, height: 20)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(isProcessing ? Color.gray : Color.black)
             }
+            .disabled(isProcessing)
         }
         .padding(.horizontal, 10)
         .padding()
