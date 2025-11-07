@@ -139,3 +139,14 @@ enum Difficulty: String, CaseIterable, Identifiable {
         }
     }
 }
+
+// MARK: - Hashable Conformance
+extension Recipe: Hashable {
+    static func == (lhs: Recipe, rhs: Recipe) -> Bool {
+        lhs.recipeId == rhs.recipeId
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(recipeId)
+    }
+}
