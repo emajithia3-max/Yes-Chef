@@ -450,4 +450,23 @@ import SwiftUI
 
         return recipeUUID
     }
+
+    // Reset all fields to initial state
+    func reset() {
+        userIdInput = ""
+        name = ""
+        description = ""
+        ingredients = [Ingredient()]
+        selectedAllergens = []
+        selectedTags = []
+        prepTimeInput = ""
+        difficulty = .easy
+        servingSize = 1
+        steps = [""]
+        mediaItems = []
+        chefsNotes = ""
+        messages = []
+        isThinking = false
+        toolcall = nil
+    }
 }

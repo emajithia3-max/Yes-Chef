@@ -177,6 +177,13 @@ struct AddRecipeMain: View {
                             }
                         }
 
+                        // Reset the form fields and tab selection
+                        await MainActor.run {
+                            self.recipeVM.reset()
+                            self.selectedInternalTab = 0
+                            self.submitToWeeklyChallenge = false
+                        }
+
                         // Navigate to PostView via home tab navigation
                         await MainActor.run {
                             self.navigationRecipe = recipe
