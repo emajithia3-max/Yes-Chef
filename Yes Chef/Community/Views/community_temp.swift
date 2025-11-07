@@ -418,21 +418,22 @@ struct ChangePasswordView: View {
 struct FeedView: View {
     @State private var viewModel = PostViewModel()
     @State private var selectedTab: Tab = .forYou
+    @Binding var navigationRecipe: Recipe?
     @Environment(AuthenticationVM.self) var authVM
     enum Tab {
         case forYou, following
     }
-    
+
     let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
-    
+
     // Different possible heights for visual variation
     let imageHeights: [CGFloat] = [160, 190, 220]
-    
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
                 // Title with icon
                 HStack {
@@ -616,6 +617,10 @@ struct FeedView: View {
                     }
                 }
             }*/
+            .navigationDestination(item: $navigationRecipe) { recipe in
+                PostView(recipe: recipe)
+                    .environment(authVM)
+            }
         }
         .onAppear {
             Task {
